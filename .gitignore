@@ -1,2 +1,4 @@
 pkg/
 result*
+target/
+webapp/node_modules
