@@ -1,12 +1,30 @@
 { naersk
 , nix-gitignore
+, stdenv
+, wasm-bindgen-cli
 }:
 let
   wasmTarget = "wasm32-unknown-unknown";
-in
-naersk.buildPackage {
-  root = nix-gitignore.gitignoreSource [ "nix/" ] ../.;
+  rustBuild = naersk.buildPackage {
+    root = nix-gitignore.gitignoreSource [ "nix/" ] ../.;
 
-  copyLibs = true;
-  CARGO_BUILD_TARGET = wasmTarget;
-}
+    copyLibs = true;
+    copyTarget = true;
+    CARGO_BUILD_TARGET = wasmTarget;
+  };
+in
+stdenv.mkDerivation {
+    name = "preset-converter";
+
+    src = rustBuild;
+
+    nativeBuildInputs = [ wasm-bindgen-cli ];
+
+    buildCommand = ''
+      mkdir -p $out
+
+      for module in $src/lib/*.wasm; do
+        RUST_BACKTRACE=1 wasm-bindgen --target nodejs --out-dir $out $module
+      done
+    '';
+  }
