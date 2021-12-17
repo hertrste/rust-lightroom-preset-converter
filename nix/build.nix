@@ -24,7 +24,7 @@ stdenv.mkDerivation {
       mkdir -p $out
 
       for module in $src/lib/*.wasm; do
-        RUST_BACKTRACE=1 wasm-bindgen --target nodejs --out-dir $out $module
+        RUST_BACKTRACE=1 wasm-bindgen --target bundler --out-dir $out $module
       done
     '';
   }
