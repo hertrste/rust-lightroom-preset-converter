@@ -5,23 +5,24 @@
 The Nix package manager is used to build the Rust webassembly part of the
 project. Do the following:
 ```sh
-$ nix-build nix/release.nix -A build
+$ nix-build nix/release.nix -A rust-wasm-preset-converter
+```
+
+This compiles the Rust code to webassembly (.wasm file ending) with additional
+javascript and typescript wrappers that can be imported from your corresponding
+web project.
+
+To bundle the webassembly together with the website ready to be served via a
+webserver do the following:
+```sh
+$ nix-build nix/release.nix -A preset-converter
 ```
 
 To build and serve the web application that uses the webassembly library do the
 following:
 ```sh
-cd webapp/
-npm install
-npm run start
+$ nix-build nix/release.nix -A http-server
 ```
 
-This should start a web-server that is accessible at `http://localhost:8080`
-per default (port may vary).
-
-
-## Known Issues
-
-* The `webapp` has a hardcoded path to `result/` in the projects top-level.
-  Therefore, `nix-build` must be invoked to build the Rust part of the project
-  first.
+This creates a script that on invocation starts a web-server that is accessible
+at `http://localhost:8000/index.html` per default.
