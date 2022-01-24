@@ -17,3 +17,10 @@ extern {
 pub fn greet() {
     alert("Hello, preset-converter!");
 }
+
+#[wasm_bindgen]
+pub fn convert_preset(s : &str) -> String {
+    log!("Got input {}", s);
+
+    String::from("new preset format")
+}
