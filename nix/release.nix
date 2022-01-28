@@ -27,6 +27,7 @@ rec {
       mkdir -p $out
       ln -s ${rust-wasm-preset-converter} $out/rust-preset-converter
       ln -s $src/index.html $out/index.html
+      ln -s $src/app.js $out/app.js
     '';
   };
 
