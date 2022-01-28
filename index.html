@@ -1,73 +1,165 @@
 <html>
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+    <style>
+        body {
+          font-family: sans-serif;
+        }
+        a {
+          color: #369;
+        }
+        .note {
+          width: 500px;
+          margin: 50px auto;
+          font-size: 1.1em;
+          color: #333;
+          text-align: justify;
+        }
+        #drop-area {
+          border: 2px dashed #ccc;
+          border-radius: 20px;
+          width: 480px;
+          margin: 50px auto;
+          padding: 20px;
+        }
+        #drop-area.highlight {
+          border-color: purple;
+        }
+        p {
+          margin-top: 0;
+        }
+        .my-form {
+          margin-bottom: 10px;
+        }
+        #gallery {
+          margin-top: 10px;
+        }
+        #gallery img {
+          width: 150px;
+          margin-bottom: 10px;
+          margin-right: 10px;
+          vertical-align: middle;
+        }
+        .button {
+          display: inline-block;
+          padding: 10px;
+          background: #ccc;
+          cursor: pointer;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+        }
+        .button:hover {
+          background: #ddd;
+        }
+        #fileElem {
+          display: none;
+        }
+    </style>
   </head>
   <body>
     <!-- Note the usage of `type=module` here as this is an ES6 module -->
     <script type="module">
-      // Use ES module import syntax to import functionality from the module
-      // that we have compiled.
-      //
-      // Note that the `default` import is an initialization function which
-      // will "boot" the module and make it ready to use. Currently browsers
-      // don't support natively imported WebAssembly as an ES module, but
-      // eventually the manual initialization won't be required!
-      import init, { greet, convert_preset } from './rust-preset-converter/preset_converter.js';
+        import { convert } from './app.js'
 
-      async function run() {
-        // First up we need to actually load the wasm file, so we use the
-        // default export to inform it where the wasm file is located on the
-        // server, and then we wait on the returned promise to wait for the
-        // wasm to be loaded.
-        //
-        // It may look like this: `await init('./pkg/without_a_bundler_bg.wasm');`,
-        // but there is also a handy default inside `init` function, which uses
-        // `import.meta` to locate the wasm file relatively to js file.
-        //
-        // Note that instead of a string you can also pass in any of the
-        // following things:
-        //
-        // * `WebAssembly.Module`
-        //
-        // * `ArrayBuffer`
-        //
-        // * `Response`
-        //
-        // * `Promise` which returns any of the above, e.g. `fetch("./path/to/wasm")`
-        //
-        // This gives you complete control over how the module is loaded
-        // and compiled.
-        //
-        // Also note that the promise, when resolved, yields the wasm module's
-        // exports which is the same as importing the `*_bg` module in other
-        // modes
-        await init();
+        let dropArea = null;
+        let progressBar = null;
 
-        // And afterwards we can use all the functionality defined in wasm.
-        greet();
-
-        var converted = convert_preset("preset string");
-        console.log("convert_preset returned ", converted);
-
-        var file;
-        var data = [];
-        data.push("This is a test\n");
-        data.push("Of creating a file\n");
-        data.push("In a browser\n");
-        var properties = {type: 'text/plain'}; // Specify the file's mime-type.
-        try {
-          // Specify the filename using the File constructor, but ...
-          file = new File(data, "file.txt", properties);
-        } catch (e) {
-          // ... fall back to the Blob constructor if that isn't supported.
-          file = new Blob(data, properties);
+        function preventDefaults (e) {
+          e.preventDefault()
+          e.stopPropagation()
         }
-        var url = URL.createObjectURL(file);
-        document.getElementById('link').href = url;
-      }
 
-      run();
-    </script>
-    <a id="link" target="_blank" download="file.txt">Download</a>
+        function highlight(e) {
+          dropArea.classList.add('highlight')
+        }
+
+        function unhighlight(e) {
+          dropArea.classList.remove('active')
+        }
+
+        function handleDrop(e) {
+          var dt = e.dataTransfer
+          var files = dt.files
+
+          handleFiles(files)
+        }
+
+        function handleFiles(files) {
+          files = [...files]
+          files.forEach(uploadFile)
+        }
+        window.handleFiles = handleFiles;
+
+        function uploadFile(file, i) {
+          const reader = new FileReader();
+          let content = reader.readAsText(file);
+
+          reader.addEventListener("load", async () => {
+              // this will then display a text file
+              var converted = await convert(reader.result);
+
+              var output_file;
+              var properties = {type: 'text/plain'}; // Specify the file's mime-type.
+              try {
+                // Specify the filename using the File constructor, but ...
+                output_file = new File([converted], file.name, properties);
+              } catch (e) {
+                // ... fall back to the Blob constructor if that isn't supported.
+                output_file = new Blob([converted], properties);
+              }
+
+              // Create download link with converted file
+              var url = URL.createObjectURL(output_file);
+              let download = document.getElementById('download');
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = file.name;
+              a.innerHTML = "Download";
+              download.appendChild(a);
+          }, false);
+        }
+
+        (function(window, document, undefined){
+            window.onload = init;
+
+              function init(){
+                // the code to be called when the dom has loaded
+                dropArea = document.getElementById('drop-area')
+                progressBar = document.getElementById('progress-bar')
+
+
+                // Prevent default drag behaviors
+                ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                  dropArea.addEventListener(eventName, preventDefaults, false)
+                  document.body.addEventListener(eventName, preventDefaults, false)
+                })
+
+                // Highlight drop area when item is dragged over it
+                ;['dragenter', 'dragover'].forEach(eventName => {
+                  dropArea.addEventListener(eventName, highlight, false)
+                })
+
+                ;['dragleave', 'drop'].forEach(eventName => {
+                  dropArea.addEventListener(eventName, unhighlight, false)
+                })
+
+                // Handle dropped files
+                dropArea.addEventListener('drop', handleDrop, false)
+              }
+
+            })(window, document, undefined);
+
+
+     </script>
+    <div id="drop-area">
+      <form class="my-form">
+        <p>Upload a lightroom preset to convert by dragging and dropping onto
+        the dashed region or use the file dialog. The conversion is done locally;
+        no data is uploaded somewhere else.</p>
+        <input type="file" id="fileElem" accept="text" onchange="window.handleFiles(this.files)">
+        <label class="button" for="fileElem">Select a preset</label>
+      </form>
+      <div id="download" /></div>
+    </div>
   </body>
 </html>
