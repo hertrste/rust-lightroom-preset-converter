@@ -1,3 +1,4 @@
+mod preset_converter;
 mod utils;
 
 use wasm_bindgen::prelude::*;
@@ -18,9 +19,8 @@ pub fn greet() {
     alert("Hello, preset-converter!");
 }
 
+
 #[wasm_bindgen]
 pub fn convert_preset(s : &str) -> String {
-    log!("Got input {}", s);
-
-    String::from("new preset format")
+    preset_converter::convert_preset(s)
 }
