@@ -6,7 +6,7 @@
 let
   wasmTarget = "wasm32-unknown-unknown";
   rustBuild = naersk.buildPackage {
-    root = nix-gitignore.gitignoreSource [ "nix/" ] ../.;
+    root = nix-gitignore.gitignoreSource [ "nix/" "website/" ] ../.;
 
     copyLibs = true;
     copyTarget = true;

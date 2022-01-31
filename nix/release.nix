@@ -17,19 +17,26 @@ rec {
   # Build the rust wasm project resulting in *.wasm + javascript bindings
   rust-wasm-preset-converter = pkgs.callPackage ./build.nix { inherit naersk; };
 
-  # Bundle the rust wasm project with a html project
-  preset-converter = pkgs.stdenv.mkDerivation {
-    name = "html";
+  website = pkgs.stdenv.mkDerivation {
+    name = "preset-converter-website";
 
-    src = ../.;
+    src = ../website;
 
     buildCommand = ''
       mkdir -p $out
-      ln -s ${rust-wasm-preset-converter} $out/rust-preset-converter
       ln -s $src/index.html $out/index.html
       ln -s $src/app.js $out/app.js
     '';
   };
+
+  # Bundle the rust wasm project with a html project
+  preset-converter = pkgs.runCommandNoCC "preset-converter-bundle" {}
+  ''
+    mkdir -p $out
+    ln -s ${rust-wasm-preset-converter} $out/rust-preset-converter
+    ln -s ${website}/index.html $out/index.html
+    ln -s ${website}/app.js $out/app.js
+  '';
 
   # Create a script that starts a webserver serving the preset converter
   http-server = pkgs.writers.writeBash "http-server.sh" ''
