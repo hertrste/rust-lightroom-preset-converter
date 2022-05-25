@@ -1,4 +1,8 @@
+extern crate serde;
+
 use crate::log;
+use quick_xml;
+use serde::Deserialize;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
@@ -46,40 +50,59 @@ pub fn decode_tonecurve<T: std::io::BufRead>(reader: &mut Reader<T>, tonecurve_n
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct SequenceItem {
+    #[serde(rename = "$value")]
+    content: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Sequence {
+    #[serde(rename = "rdf_li")]
+    items: Vec<SequenceItem>
+}
+
+#[derive(Debug, Deserialize)]
+struct ToneCurve2012 {
+    #[serde(rename = "rdf_Seq")]
+    sequence: Sequence,
+}
+
+#[derive(Debug, Deserialize)]
+struct Description {
+    #[serde(rename = "crs_PresetType")]
+    preset_type: String,
+
+    #[serde(rename = "crs_SupportsAmount")]
+    supports_amount: bool,
+
+    #[serde(rename = "crs_ToneCurvePV2012")]
+    tone_curve_2012: ToneCurve2012,
+}
+
+#[derive(Debug, Deserialize)]
+struct Rdf {
+    #[serde(rename = "rdf_Description")]
+    description: Description,
+}
+
+#[derive(Debug, Deserialize)]
+struct xmpmeta {
+    #[serde(rename = "rdf_RDF")]
+    pub rdf: Rdf,
+}
+
 pub fn convert_preset(s : &str) -> String {
-    let mut reader = Reader::from_str(s);
-    reader.trim_text(true);
-
-    let mut buf = Vec::new();
-
-    // The `Reader` does not implement `Iterator` because it outputs borrowed data (`Cow`s)
-    loop {
-        // NOTE: this is the generic case when we don't know about the input BufRead.
-        // when the input is a &str or a &[u8], we don't actually need to use another
-        // buffer, we could directly call `reader.read_event_unbuffered()`
-        match reader.read_event(&mut buf) {
-            Ok(Event::Start(e)) => {
-                log!("found {}", std::str::from_utf8(e.name()).unwrap());
-                match e.name() {
-                    n if n.starts_with(b"crs:ToneCurve") => {
-                        decode_tonecurve(&mut reader, String::from_utf8(e.name().to_vec()).unwrap());
-                    },
-                    b"rdf:Description" => {
-                        for a in e.attributes() {
-                            decode_description_attribute(a.unwrap());
-                        }
-                    },
-                    _ => (),
-                }
-            },
-            Ok(Event::Text(e)) => log!("Text at position {}: {:?}", reader.buffer_position(), e),
-            Ok(Event::Eof) => {log!("eof"); break}, // exits the loop when reaching end of file
-            Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
-            _ => {log!("other event"); ()}, // There are several other `Event`s we do not consider here
-        }
-
-        // if we don't keep a borrow elsewhere, we can clear the buffer to keep memory usage low
-        buf.clear();
+    // The xmp format is not obeying the xml specification completely and has some invalid
+    // characters. We pre-process the given string slightly to make it easily digestible by
+    // quick_xml.
+    let result = str::replace(s, ":", "_");
+    let slice: &str = &result[..];
+    log!("{}", result);
+    let doc_res: Result<xmpmeta, quick_xml::DeError> = quick_xml::de::from_str(slice);
+    match doc_res {
+        Ok(doc) => log!("Success parsing preset: {}", doc.rdf.description.tone_curve_2012.sequence.items[0].content),
+        Err(x) => log!("Error parsing preset: {}", x),
     }
 
     String::from("new preset format")
