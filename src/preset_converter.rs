@@ -3,52 +3,6 @@ extern crate serde;
 use crate::log;
 use quick_xml;
 use serde::Deserialize;
-use quick_xml::Reader;
-use quick_xml::events::Event;
-
-pub fn decode_description_attribute(attr: quick_xml::events::attributes::Attribute) {
-    let key = String::from_utf8(attr.key.to_vec()).unwrap();
-    let value = String::from_utf8(attr.value.into()).unwrap();
-    log!("in decode {}: {}", key, value);
-    //log!("in decode {}", std::str::from_utf8(attr.key).unwrap() + std::str::from_utf8_mut(attr.value.to_mut()).unwrap());
-}
-
-pub fn decode_li<T: std::io::BufRead>(reader: &mut Reader<T>, li_name: String) {
-    let mut skip_buf = Vec::new();
-    loop {
-        match reader.read_event(&mut skip_buf) {
-            Ok(Event::Start(element)) if String::from_utf8(element.name().to_vec()).unwrap() == li_name => {},
-            Ok(Event::End(element)) if String::from_utf8(element.name().to_vec()).unwrap() == li_name => {
-                break;
-            },
-            Ok(Event::Text(e)) => log!("Text at position {}: {:?}", reader.buffer_position(), e),
-            _ => { panic!("Should not get here"); }
-        }
-    }
-}
-
-pub fn decode_tonecurve<T: std::io::BufRead>(reader: &mut Reader<T>, tonecurve_name: String) {
-    log!("parsing tonecurve {}", tonecurve_name);
-
-    let mut skip_buf = Vec::new();
-    loop {
-        match reader.read_event(&mut skip_buf) {
-            Ok(Event::Start(element)) if element.name() == b"rdf:li" => {
-                decode_li(reader, String::from_utf8(element.name().to_vec()).unwrap());
-            },
-            Ok(Event::Start(element)) => {
-                //log!("nested: {}", String::from_utf8(element.name().to_vec()).unwrap());
-            },
-            Ok(Event::End(element)) if String::from_utf8(element.name().to_vec()).unwrap() == tonecurve_name => {
-                log!("tonecurve {} closed", tonecurve_name);
-                break;
-            },
-            Ok(Event::End(_element)) => {
-            }
-            _ => {}
-        }
-    }
-}
 
 #[derive(Debug, Deserialize)]
 struct SequenceItem {
