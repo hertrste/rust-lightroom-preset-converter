@@ -29,7 +29,8 @@ wee_alloc = { version = "0.4.5", optional = true }
 # For logging via wasm
 web-sys = { version = "0.3", features = [ "console" ]}
 
-quick-xml = "0.22.0"
+serde = { version = "1.0.136", features = [ "derive" ]}
+quick-xml = { version = "0.22", features = [ "serialize" ] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
