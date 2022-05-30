@@ -55,7 +55,7 @@ pub fn convert_preset(s : &str) -> String {
     log!("{}", result);
     let doc_res: Result<xmpmeta, quick_xml::DeError> = quick_xml::de::from_str(slice);
     match doc_res {
-        Ok(doc) => log!("Success parsing preset: {}", doc.rdf.description.tone_curve_2012.sequence.items[0].content),
+        Ok(doc) => log!("Success parsing preset: {:#?}", doc),
         Err(x) => log!("Error parsing preset: {}", x),
     }
 
