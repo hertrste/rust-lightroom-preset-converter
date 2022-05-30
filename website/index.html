@@ -98,6 +98,20 @@
               // this will then display a text file
               var converted = await convert(reader.result);
 
+              let download = document.getElementById('download');
+
+              if (!converted) {
+                const p = document.createElement('p');
+                p.innerHTML = "Failed to convert preset. See console log for details.";
+                p.style.color = "red";
+                if (download.firstChild != null) {
+                  download.removeChild(download.firstChild);
+                }
+
+                download.appendChild(p);
+                return;
+              }
+
               var output_file;
               var properties = {type: 'text/plain'}; // Specify the file's mime-type.
               try {
@@ -110,7 +124,6 @@
 
               // Create download link with converted file
               var url = URL.createObjectURL(output_file);
-              let download = document.getElementById('download');
               const a = document.createElement('a');
               a.href = url;
               a.download = file.name;

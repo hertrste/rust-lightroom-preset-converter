@@ -265,7 +265,7 @@ struct xmpmeta {
     pub rdf: Rdf,
 }
 
-pub fn convert_preset(s : &str) -> String {
+pub fn convert_preset(s : &str) -> Option<String> {
     // The xmp format is not obeying the xml specification completely and has some invalid
     // characters. We pre-process the given string slightly to make it easily digestible by
     // quick_xml.
@@ -274,9 +274,14 @@ pub fn convert_preset(s : &str) -> String {
     log!("{}", result);
     let doc_res: Result<xmpmeta, quick_xml::DeError> = quick_xml::de::from_str(slice);
     match doc_res {
-        Ok(doc) => log!("Success parsing preset: {:#?}", doc),
-        Err(x) => log!("Error parsing preset: {}", x),
-    }
+        Ok(doc) => {
+            log!("Success parsing preset: {:#?}", doc);
 
-    String::from("new preset format")
+            Some(String::from("new preset format"))
+        },
+        Err(x) => {
+            log!("Error parsing preset: {}", x);
+            None
+        },
+    }
 }
