@@ -115,6 +115,10 @@
               a.href = url;
               a.download = file.name;
               a.innerHTML = "Download";
+              if (download.firstChild != null) {
+                download.removeChild(download.firstChild);
+              }
+
               download.appendChild(a);
           }, false);
         }
